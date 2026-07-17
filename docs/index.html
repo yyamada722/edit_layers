@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Edit Layers ヘルプ</title>
+<style>
+  :root {
+    --bg: #1d1d1d; --panel: #262626; --text: #d8d8d8; --dim: #9a9a9a;
+    --accent: #4f9eea; --warn: #e06a5a; --border: #3a3a3a;
+  }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: "Segoe UI", "Hiragino Sans", "Noto Sans JP", sans-serif;
+    line-height: 1.8; margin: 0; padding: 2rem 1rem;
+  }
+  main { max-width: 860px; margin: 0 auto; }
+  h1 { font-size: 1.7rem; border-bottom: 2px solid var(--accent); padding-bottom: .4rem; }
+  h2 { font-size: 1.25rem; margin-top: 2.4rem; border-left: 4px solid var(--accent); padding-left: .6rem; }
+  h3 { font-size: 1.05rem; margin-top: 1.6rem; color: var(--accent); }
+  p, li { color: var(--text); }
+  .dim { color: var(--dim); font-size: .9rem; }
+  code, kbd {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 4px; padding: .05rem .4rem; font-size: .9em;
+  }
+  .fig { margin: 1.2rem 0; text-align: center; }
+  .fig img {
+    max-width: 100%; border: 1px solid var(--border); border-radius: 6px;
+  }
+  .fig.small img { max-width: 380px; }
+  .fig figcaption { color: var(--dim); font-size: .85rem; margin-top: .4rem; }
+  .warn {
+    background: #3a2422; border-left: 4px solid var(--warn);
+    padding: .7rem 1rem; border-radius: 4px; margin: 1rem 0;
+  }
+  .tip {
+    background: #22303a; border-left: 4px solid var(--accent);
+    padding: .7rem 1rem; border-radius: 4px; margin: 1rem 0;
+  }
+  .dot { display: inline-block; width: .75em; height: .75em; border-radius: 50%;
+         vertical-align: baseline; margin: 0 .15em; }
+  table { border-collapse: collapse; margin: 1rem 0; }
+  th, td { border: 1px solid var(--border); padding: .4rem .8rem; text-align: left; }
+  th { background: var(--panel); }
+</style>
+</head>
+<body>
+<main>
+
+<h1>Edit Layers</h1>
+<p>
+3ds Max の Edit Poly のような、<strong>レイヤーベースの非破壊メッシュ編集スタック</strong>を
+Blender に追加するアドオンです。押し出し・ベベル・サブディバイド・削除などの
+トポロジ変更を含む編集をレイヤーとして記録し、後から個別に無効化・並べ替え・再編集できます。
+さらに任意のレイヤーから<strong>ブランチ</strong>を分岐させ、編集パターンの切り替え・比較ができます。
+</p>
+<p class="dim">場所: 3D ビューポート &gt; サイドバー (N キー) &gt; Edit Layers タブ。
+UI は Blender の言語設定に従い日本語/英語が自動で切り替わります。
+このヘルプはパネル右下の <strong>?</strong> ボタンからいつでも開けます。</p>
+
+<h2>1. 基本ワークフロー</h2>
+<ol>
+  <li>メッシュオブジェクトを選択し、パネルの <strong>スタックを初期化</strong> を押す</li>
+  <li><strong>記録 (編集)</strong> または <strong>記録 (スカルプト)</strong> で記録を開始する</li>
+  <li>普段どおりに編集する — 専用ツールは不要で、Blender 標準の編集・スカルプト機能が
+      すべて使えます。記録中はモードを自由に行き来してかまいません</li>
+  <li><strong>コミット</strong> で編集内容が 1 レイヤーとして保存される</li>
+  <li>完成したら <strong>ベイク</strong> で結果を確定してスタックを削除する</li>
+</ol>
+
+<div class="fig small">
+  <img src="images/panel_layers.png" alt="Edit Layers パネル">
+  <figcaption>パネル全体。上から記録ボタン、ブランチリスト、レイヤーリスト。</figcaption>
+</div>
+
+<h3>レイヤーリストの見かた</h3>
+<p class="dim">並び順は上が最初のレイヤー、下が最新 (モディファイアスタックと同じく上から順に適用)。</p>
+<ul>
+  <li><strong>行頭の色ドット</strong> — そのブランチ専用のレイヤー (ブランチの識別色)。
+      空白なら複数ブランチで共有される幹のレイヤー</li>
+  <li><strong>← ブランチ名 バッジ</strong> — そのレイヤーを分岐点として別ブランチが分かれている</li>
+  <li><strong>目アイコン</strong> — レイヤーの有効/無効を切り替え (即座に再構築される)</li>
+  <li><strong>▲▼</strong> で並べ替え、<strong>−</strong> で削除、
+      <strong>選択レイヤーを再編集</strong> で途中のレイヤーに戻って編集できます</li>
+</ul>
+
+<h3>何が記録されるか</h3>
+<ul>
+  <li>頂点の移動、トポロジの追加・削除 (押し出し・ベベル・サブディバイド・ナイフ等なんでも)</li>
+  <li>マテリアル割り当て・スムーズ/フラット・シーム・シャープ・クリース・ベベルウェイト</li>
+  <li>押し出し等で生まれた<strong>新規ジオメトリは近傍アンカー相対</strong>で保存されるため、
+      上流レイヤーで形を動かすと押し出し部分も付いてきます</li>
+  <li class="dim">記録されないもの: UV・頂点カラー (制限事項を参照)</li>
+</ul>
+
+<h2>2. 記録中</h2>
+<div class="fig small">
+  <img src="images/panel_recording.png" alt="記録中のパネル">
+  <figcaption>記録中はパネル上部に状態が表示され、コミット / 破棄 を選べる。</figcaption>
+</div>
+<p>
+記録は「記録開始時点とコミット時点の差分」をレイヤー化します。差分は頂点インデックス
+ではなく<strong>永続 ID</strong> で記録されるため、後から上流レイヤーを変更しても参照が壊れません。
+</p>
+
+<h2>3. 影響ハイライト</h2>
+<div class="fig">
+  <img src="images/viewport_influence.png" alt="影響ハイライト">
+  <figcaption>「Extrude Top」レイヤーが生成した頂点が緑で表示されている。</figcaption>
+</div>
+<p>
+レイヤーリストのヘッダー右にある<strong>オーバーレイアイコン</strong>を有効にすると、
+選択中のレイヤーが影響した頂点がビューポートに表示されます:
+<span class="dot" style="background:#ffa519"></span><strong>橙 = 移動した頂点</strong> /
+<span class="dot" style="background:#4dff66"></span><strong>緑 = 生成された頂点</strong>。
+どのレイヤーが何をしたか思い出せないときや、統合・削除の前の確認に便利です。
+</p>
+<p class="dim">削除された要素は (もう存在しないため) 表示されません。
+属性変更のみのレイヤーも表示対象がありません。</p>
+
+<h2>4. レイヤーの整理 — 統合と部分ベイク</h2>
+<p>レイヤーリスト横の <strong>▼ メニュー</strong> にスタックを整理する操作があります:</p>
+<ul>
+  <li><strong>直前のレイヤーと統合</strong> — 選択レイヤーを 1 つ上 (直前) のレイヤーに
+      統合して 1 枚にします。細かいコミットをまとめたいときに</li>
+  <li><strong>ここまでをベースに確定</strong> — 選択レイヤーまでの内容をベースメッシュに
+      焼き込み、そのレイヤーごと取り除きます (部分ベイク)。「ここまでは確定」と
+      決めた下層を畳んでスタックを軽くできます</li>
+</ul>
+<p class="dim">どちらも安全ガード付き: 共有レイヤーの統合、他ブランチが失われる部分ベイク、
+無効レイヤーを含む操作はブロックされます。実行前にブランチを整理してください。</p>
+
+<h2>5. ブランチ — 編集パターンの分岐と比較</h2>
+<ol>
+  <li>分岐させたいレイヤーを選択し、ブランチリスト横の <strong>[+]</strong> を押す</li>
+  <li>新ブランチがアクティブになり、以降のコミットは新ブランチにだけ積まれる</li>
+  <li>ブランチリストのクリックで即座に切り替え。<strong>並べて比較</strong> で他ブランチの結果を
+      複製として横に並べ、<strong>クリア</strong> で片付けられます</li>
+</ol>
+
+<div class="fig">
+  <img src="images/viewport_compare.png" alt="ブランチの並べて比較">
+  <figcaption>「並べて比較」の例。左が Main (上面押し出し)、右が Variant A (正面の面を削除)。</figcaption>
+</div>
+
+<ul>
+  <li>分岐点より上流の共有レイヤーを再編集すると<strong>全ブランチに波及</strong>します
+      (実体を共有しているため)</li>
+  <li>共有レイヤーの削除や、共有レイヤーをまたぐ並べ替えは安全のためブロックされます</li>
+  <li>ブランチ削除時は、そのブランチ<strong>専用</strong>のレイヤーだけが一緒に削除されます</li>
+  <li>気に入った比較結果は複製してキープできます (自分で複製したものは「クリア」で消えません)</li>
+  <li>ブランチの識別色はブランチリストの色チップをクリックして変更できます</li>
+</ul>
+
+<h2>6. 記録し忘れの救済</h2>
+<div class="fig small">
+  <img src="images/panel_rescue.png" alt="未記録編集の警告">
+  <figcaption>記録せずに編集すると警告が出る。「レイヤーとして取り込む」で救済できる。</figcaption>
+</div>
+<p>
+記録を開始せずに編集してしまっても、未記録の編集は自動検出されます。
+<strong>レイヤーとして取り込む</strong> を押せば、遡って通常のレイヤーと同じ品質で保存されます。
+未記録編集がある間は、それを消してしまう操作 (記録開始・並べ替え・ベイク等) はブロックされ、
+<strong>破棄して再構築</strong> を押したときだけ捨てられます。
+</p>
+<p class="dim">検出はセッション内の再構築履歴に依存するため、ファイルを開き直した直後の
+未記録編集は自動検出されません (手動での取り込みは可能)。</p>
+
+<h2>7. シェイプキーについて (排他)</h2>
+<div class="warn">
+シェイプキーは頂点インデックスに直接依存するため、本アドオンと<strong>併用できません</strong>。
+<ul>
+  <li>キーのあるメッシュではスタックを初期化できません (先にキーを適用/削除)</li>
+  <li>スタック運用中にキーを追加すると<strong>即座に自動で取り消され</strong>、通知が表示されます</li>
+  <li><strong>スタックを破棄 (現状を確定)</strong> を使えば、現在のメッシュを保持したまま
+      スタックだけを外して通常のワークフローに戻れます</li>
+</ul>
+推奨: モデリング (Edit Layers) を終えてベイクした後にシェイプキーを作成してください。
+</div>
+
+<h2>8. 制限事項</h2>
+<ul>
+  <li>新規頂点のアンカー追従は平行移動のみです (上流の回転・スケールには
+      オフセットが回転しません)</li>
+  <li>UV と頂点カラーは記録されません</li>
+  <li>スカルプトの Dyntopo / リメッシュはトポロジが全面的に変わるため、
+      非常に大きなレイヤーになります (壊れはしません)</li>
+  <li>マルチレゾモディファイアの変位は記録されません</li>
+  <li>記録中に Blender を終了すると、その記録セッションは失われます
+      (コミット済みレイヤーは .blend に保存されます)</li>
+</ul>
+
+<h2>9. データの保存場所</h2>
+<table>
+  <tr><th>データ</th><th>場所</th></tr>
+  <tr><td>レイヤースタック</td><td><code>Object.edit_layers</code> (.blend に保存)</td></tr>
+  <tr><td>ベースメッシュ</td><td><code>&lt;メッシュ名&gt;_el_base</code> (fake user 付き Mesh)</td></tr>
+  <tr><td>永続頂点 ID</td><td>メッシュの <code>el_id</code> INT 属性 (POINT ドメイン)</td></tr>
+</table>
+
+<div class="tip">
+困ったときは <strong>再構築</strong> ボタンでスタックを再適用できます。参照が壊れた場合は
+パネル下部に警告が表示され、該当部分だけがスキップされます (クラッシュはしません)。
+</div>
+
+<p class="dim" style="margin-top:3rem">Edit Layers v0.8 — Blender 5.x 用アドオン</p>
+
+</main>
+</body>
+</html>
