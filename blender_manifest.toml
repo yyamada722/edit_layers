@@ -1,0 +1,24 @@
+schema_version = "1.0.0"
+
+id = "edit_layers"
+version = "1.0.0"
+name = "Edit Layers"
+tagline = "Layer-based non-destructive mesh editing stack with branches"
+maintainer = "Hayashihikaru"
+type = "add-on"
+
+tags = ["Modeling", "Mesh"]
+
+blender_version_min = "5.0.0"
+
+license = ["SPDX:GPL-3.0-or-later"]
+copyright = ["2026 Hayashihikaru"]
+
+[build]
+paths_exclude_pattern = [
+  "__pycache__/",
+  "/dist/",
+  "/build_zip.py",
+  "/store_assets/",
+  "*.zip",
+]
