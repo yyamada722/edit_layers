@@ -1,111 +1,115 @@
 # Edit Layers
 
-**Layer-based non-destructive mesh editing stack for Blender** — record any Edit/Sculpt Mode session as a layer, then toggle, reorder, re-edit, merge and branch your modeling steps. (English/Japanese UI included — this README is in Japanese; see the in-addon help for details.)
+**English** | [日本語](README.ja.md)
 
-モデリングの手作業を「レイヤー」として積み上げられる、**非破壊メッシュ編集スタック**を Blender に追加するアドオンです。押し出し・ベベル・サブディバイド・削除などのトポロジ変更を含む編集をレイヤーとして記録し、後から個別に無効化・並べ替え・再編集できます。さらに任意のレイヤーから**ブランチ**を分岐させ、編集パターンの切り替え・比較ができます。
+A Blender add-on that adds a **non-destructive mesh editing stack**: your manual modeling work is recorded as stackable layers. Edits that change topology (extrude, bevel, subdivide, delete, ...) are captured too, and every layer can be toggled, reordered and re-edited afterwards. You can also **branch** the stack at any layer to explore and compare variations.
 
-![ブランチの並べて比較](docs/images/viewport_compare.png)
+![Comparing branches side by side](docs/images/viewport_compare.png)
 
-- **場所**: 3D ビューポート > サイドバー (N キー) > Edit Layers タブ
-- **対応**: Blender 5.0 以降 / UI は Blender の言語設定に従い日本語・英語が自動で切り替わります
-- **ヘルプ**: 画像付きヘルプは [docs/index.html](docs/index.html) (このリポジトリ内)。パネル右下の **?** ボタンからこのページが開きます
+- **Location**: 3D Viewport > Sidebar (N key) > Edit Layers tab
+- **Requirements**: Blender 5.0+ / the UI follows Blender's language preference (English and Japanese included)
+- **Help**: an illustrated guide is included at [docs/index.html](docs/index.html) (the **?** button at the bottom of the panel opens this page)
 
-## インストール
+## Installation
 
-[Releases](../../releases) から `edit_layers-<version>.zip` をダウンロードし、
-プリファレンス > 拡張機能 > 右上メニュー > **Install from Disk** でインストール (Blender 5.0+)。
+Download `edit_layers-<version>.zip` from [Releases](../../releases) and install it via
+Preferences > Get Extensions > dropdown menu > **Install from Disk** (Blender 5.0+).
 
-## 基本ワークフロー
+## Basic workflow
 
-1. メッシュオブジェクトを選択し、パネルの **スタックを初期化** を押す
-2. **記録 (編集)** または **記録 (スカルプト)** で記録を開始する
-3. 普段どおりに編集する — 専用ツールは不要で、Blender 標準の編集・スカルプト機能がすべて使えます。記録中はモードを自由に行き来してかまいません
-4. **コミット** で編集内容が 1 レイヤーとして保存される
-5. 完成したら **ベイク** で結果を確定してスタックを削除する
+1. Select a mesh object and press **Initialize Stack** in the panel
+2. Start recording with **Record (Edit)** or **Record (Sculpt)**
+3. Model as usual — no special tools required; all standard Edit and Sculpt Mode features work, and you can switch modes freely while recording
+4. Press **Commit** to save the session as a single layer
+5. When you are done, press **Bake** to apply the result and remove the stack
 
-<img src="docs/images/panel_layers.png" alt="Edit Layers パネル" width="380">
+<img src="docs/images/panel_layers.png" alt="Edit Layers panel" width="380">
 
-### レイヤーリストの見かた
+### Reading the layer list
 
-並び順は上が最初のレイヤー、下が最新 (モディファイアスタックと同じく上から順に適用)。
+The list is ordered top to bottom: first layer at the top, newest at the bottom (applied top-down like the modifier stack).
 
-- **行頭の色ドット** — そのブランチ専用のレイヤー (ブランチの識別色)。空白なら複数ブランチで共有される幹のレイヤー
-- **← ブランチ名 バッジ** — そのレイヤーを分岐点として別ブランチが分かれている
-- **目アイコン** — レイヤーの有効/無効を切り替え (即座に再構築される)
-- **▲▼** で並べ替え、**−** で削除、**選択レイヤーを再編集** で途中のレイヤーに戻って編集できます
+- **Leading color dot** — the layer belongs only to this branch (branch color). A blank slot means the layer is part of the trunk shared by multiple branches
+- **"← branch name" badge** — another branch diverges at this layer
+- **Eye icon** — enable/disable the layer (the mesh rebuilds instantly)
+- Use **▲▼** to reorder, **−** to delete, and **Re-edit Selected Layer** to go back and edit any layer in the middle of the stack
 
-### 何が記録されるか
+### What gets recorded
 
-- 頂点の移動、トポロジの追加・削除 (押し出し・ベベル・サブディバイド・ナイフ等なんでも)
-- マテリアル割り当て・スムーズ/フラット・シーム・シャープ・クリース・ベベルウェイト
-- 押し出し等で生まれた**新規ジオメトリは近傍アンカー相対**で保存されるため、上流レイヤーで形を動かすと押し出し部分も付いてきます
-- 記録されないもの: UV・頂点カラー (下記の制限を参照)
+- Vertex moves and topology changes (extrude, bevel, subdivide, knife, delete — anything)
+- Material assignment, smooth/flat shading, seams, sharp edges, creases and bevel weights
+- New geometry (e.g. extrusions) is stored **relative to nearby anchor vertices**, so it follows along when upstream layers reshape the mesh
+- Not recorded: UVs and vertex colors (see limitations)
 
-## 影響ハイライト
+## Influence overlay
 
-![影響ハイライト](docs/images/viewport_influence.png)
+![Influence overlay](docs/images/viewport_influence.png)
 
-レイヤーリストのヘッダー右にある**オーバーレイアイコン**を有効にすると、選択中のレイヤーが影響した頂点がビューポートに表示されます: **橙 = 移動した頂点 / 緑 = 生成された頂点**。どのレイヤーが何をしたか思い出せないときや、統合・削除の前の確認に便利です。
+Enable the **overlay icon** on the right of the layer list header to highlight the vertices affected by the selected layer in the viewport: **orange = moved vertices / green = created vertices**. Handy when you forget what a layer did, or before merging/deleting one.
 
-## レイヤーの整理 — 統合と部分ベイク
+Deleted elements are not shown (they no longer exist), and attribute-only layers have nothing to display.
 
-レイヤーリスト横の **▼ メニュー** にスタックを整理する操作があります:
+## Organizing the stack — merge and partial bake
 
-- **直前のレイヤーと統合** — 選択レイヤーを 1 つ上 (直前) のレイヤーに統合して 1 枚にします
-- **ここまでをベースに確定** — 選択レイヤーまでの内容をベースメッシュに焼き込み、そのレイヤーごと取り除きます (部分ベイク)
+The **▼ menu** next to the layer list offers stack housekeeping:
 
-どちらも安全ガード付き: 共有レイヤーの統合、他ブランチが失われる部分ベイク、無効レイヤーを含む操作はブロックされます。
+- **Merge Into Previous** — merge the selected layer into the one directly above it
+- **Bake Up To Here** — apply everything up to the selected layer into the base mesh and remove those layers (partial bake). Useful for collapsing the lower part of the stack once it is final
 
-## ブランチ — 編集パターンの分岐と比較
+Both come with safety guards: merging shared layers, partial bakes that would orphan other branches, and operations involving disabled layers are blocked.
 
-1. 分岐させたいレイヤーを選択し、ブランチリスト横の **[+]** を押す
-2. 新ブランチがアクティブになり、以降のコミットは新ブランチにだけ積まれる
-3. ブランチリストのクリックで即座に切り替え。**並べて比較** で他ブランチの結果を複製として横に並べ、**クリア** で片付けられます
+## Branches — explore and compare variations
 
-- 分岐点より上流の共有レイヤーを再編集すると**全ブランチに波及**します (実体を共有しているため)
-- 共有レイヤーの削除や、共有レイヤーをまたぐ並べ替えは安全のためブロックされます
-- ブランチ削除時は、そのブランチ**専用**のレイヤーだけが一緒に削除されます
-- 気に入った比較結果は複製してキープできます (自分で複製したものは「クリア」で消えません)
-- ブランチの識別色はブランチリストの色チップをクリックして変更できます
+1. Select the layer you want to branch from and press **[+]** next to the branch list
+2. The new branch becomes active and new commits stack only onto it
+3. Click branches in the list to switch instantly. **Compare** places the other branches next to your object as duplicates; **Clear** removes them
 
-## 記録し忘れの救済
+- Re-editing a shared upstream layer **propagates to all branches** (they share the same data)
+- Deleting shared layers or reordering across a shared layer is blocked for safety
+- Deleting a branch removes only the layers **exclusive** to it
+- Comparison results you duplicated yourself are kept when you press Clear
+- Click the color chip in the branch list to change a branch's identification color
 
-<img src="docs/images/panel_rescue.png" alt="未記録編集の警告" width="380">
+## Rescue for unrecorded edits
 
-記録を開始せずに編集してしまっても、未記録の編集は自動検出されます。**レイヤーとして取り込む** を押せば、遡って通常のレイヤーと同じ品質で保存されます。未記録編集がある間は、それを消してしまう操作 (記録開始・並べ替え・ベイク等) はブロックされ、**破棄して再構築** を押したときだけ捨てられます。
+<img src="docs/images/panel_rescue.png" alt="Unrecorded edits warning" width="380">
 
-## シェイプキーについて (排他)
+If you edit without starting a recording, the unrecorded changes are detected automatically. Press **Adopt as a Layer** to save them retroactively with the same quality as a normal commit. While unrecorded edits exist, operations that would wipe them (recording, reordering, baking, ...) are blocked; they are only discarded when you explicitly press **Discard and Rebuild**.
 
-シェイプキーは頂点インデックスに直接依存するため、本アドオンと**併用できません**:
+Detection relies on the rebuild history of the current session, so unrecorded edits made right after reopening a file are not auto-detected (manual adoption still works).
 
-- キーのあるメッシュではスタックを初期化できません (先にキーを適用/削除)
-- スタック運用中にキーを追加すると**即座に自動で取り消され**、通知が表示されます
-- **スタックを破棄 (現状を確定)** を使えば、現在のメッシュを保持したままスタックだけを外して通常のワークフローに戻れます
+## Shape keys (mutually exclusive)
 
-推奨: モデリング (Edit Layers) を終えてベイクした後にシェイプキーを作成してください。
+Shape keys depend directly on vertex indices and **cannot be combined** with the stack:
 
-## 制限事項
+- A stack cannot be initialized on a mesh that has shape keys (apply/remove them first)
+- Adding shape keys while a stack is active is **automatically reverted**, with a notice in the panel
+- **Discard Stack (Keep Current Mesh)** removes only the stack while keeping the current mesh and keys, returning you to the normal workflow
 
-- 新規頂点のアンカー追従は平行移動のみです (上流の回転・スケールにはオフセットが回転しません)
-- UV と頂点カラーは記録されません
-- スカルプトの Dyntopo / リメッシュはトポロジが全面的に変わるため、非常に大きなレイヤーになります (壊れはしません)
-- マルチレゾモディファイアの変位は記録されません
-- 記録中に Blender を終了すると、その記録セッションは失われます (コミット済みレイヤーは .blend に保存されます)
+Recommended: create shape keys after you finish modeling with Edit Layers and bake the stack.
 
-## データの保存場所
+## Limitations
 
-| データ | 場所 |
+- Anchor following for new geometry covers translation only (offsets do not rotate with upstream rotation/scale)
+- UVs and vertex colors are not recorded
+- Sculpt Dyntopo / remeshing replaces the whole topology and produces very large layers (nothing breaks, though)
+- Multiresolution modifier displacement is not recorded
+- Closing Blender while recording loses that recording session (committed layers are saved in the .blend)
+
+## Where the data lives
+
+| Data | Location |
 |---|---|
-| レイヤースタック | `Object.edit_layers` (.blend に保存) |
-| ベースメッシュ | `<メッシュ名>_el_base` (fake user 付き Mesh) |
-| 永続頂点 ID | メッシュの `el_id` INT 属性 (POINT ドメイン) |
+| Layer stack | `Object.edit_layers` (saved in the .blend) |
+| Base mesh | `<mesh name>_el_base` (Mesh datablock with a fake user) |
+| Persistent vertex IDs | `el_id` INT attribute on the mesh (POINT domain) |
 
-困ったときは **再構築** ボタンでスタックを再適用できます。参照が壊れた場合はパネル下部に警告が表示され、該当部分だけがスキップされます (クラッシュはしません)。
+If anything looks wrong, the **Rebuild** button re-applies the stack. Broken references are reported as warnings at the bottom of the panel and the affected parts are skipped (no crashes).
 
-## 開発
+## Development
 
-ビルド・テスト・Blender Extensions への申請手順は [DEVELOPMENT.md](DEVELOPMENT.md) を参照。
+See [DEVELOPMENT.md](DEVELOPMENT.md) for build, test and Blender Extensions submission notes.
 
-## ライセンス
+## License
 
 GPL-3.0-or-later

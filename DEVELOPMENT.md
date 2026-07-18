@@ -1,6 +1,6 @@
 # 開発メモ
 
-ユーザー向けの説明は [README.md](README.md) とヘルプ ([docs/index.html](docs/index.html)) を参照。
+ユーザー向けの説明は [README.md](README.md) (英語) / [README.ja.md](README.ja.md) (日本語) とヘルプ ([docs/index.html](docs/index.html)) を参照。
 ここにはビルド・配布・内部設計の情報をまとめる。
 
 ## モジュール構成

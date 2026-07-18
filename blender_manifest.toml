@@ -29,6 +29,7 @@ paths_exclude_pattern = [
   "/DEVELOPMENT.md",
   "/RELEASE_NOTES*",
   "/README.md",
+  "/README.ja.md",
   "/readme.md",
   "/.gitignore",
   "*.zip",
