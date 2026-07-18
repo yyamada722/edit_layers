@@ -121,7 +121,7 @@ def s_setup():
                 getattr(cls, "bl_space_type", "") == "VIEW_3D"
                 and getattr(cls, "bl_region_type", "") == "UI"
                 and getattr(cls, "is_registered", False)
-                and cls is not edit_layers.EL_PT_panel
+                and cls is not edit_layers.ui.EL_PT_panel
             ):
                 found.append(cls)
         return found
@@ -131,9 +131,9 @@ def s_setup():
             bpy.utils.unregister_class(cls)
         except Exception:
             pass
-    bpy.utils.unregister_class(edit_layers.EL_PT_panel)
-    edit_layers.EL_PT_panel.bl_category = "Item"
-    bpy.utils.register_class(edit_layers.EL_PT_panel)
+    bpy.utils.unregister_class(edit_layers.ui.EL_PT_panel)
+    edit_layers.ui.EL_PT_panel.bl_category = "Item"
+    bpy.utils.register_class(edit_layers.ui.EL_PT_panel)
 
     obj = bpy.context.scene.objects.get("Cube")
     bpy.context.view_layer.objects.active = obj

@@ -1,11 +1,12 @@
-schema_version = "1.0.0"
+schema_version = "1.0.1"
 
 id = "edit_layers"
-version = "1.0.0"
+version = "1.0.1"
 name = "Edit Layers"
 tagline = "Layer-based non-destructive mesh editing stack with branches"
 maintainer = "Hayashihikaru"
 type = "add-on"
+website = "https://github.com/yyamada722/edit_layers"
 
 tags = ["Modeling", "Mesh"]
 
@@ -17,8 +18,17 @@ copyright = ["2026 Hayashihikaru"]
 [build]
 paths_exclude_pattern = [
   "__pycache__/",
+  "/.git/",
   "/dist/",
-  "/build_zip.py",
+  "/docs/",
   "/store_assets/",
+  "/tests/",
+  "/tools/",
+  "/build_zip.py",
+  "/DEVELOPMENT.md",
+  "/RELEASE_NOTES*",
+  "/README.md",
+  "/readme.md",
+  "/.gitignore",
   "*.zip",
 ]

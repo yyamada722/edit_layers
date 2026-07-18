@@ -163,7 +163,7 @@ def s_setup():
                     getattr(cls, "bl_space_type", "") == "VIEW_3D"
                     and getattr(cls, "bl_region_type", "") == "UI"
                     and getattr(cls, "is_registered", False)
-                    and cls is not edit_layers.EL_PT_panel
+                    and cls is not edit_layers.ui.EL_PT_panel
                 ):
                     found.append(cls)
             return found
@@ -175,10 +175,10 @@ def s_setup():
                 removed += 1
             except Exception:
                 failed.append(cls.__name__)
-        bpy.utils.unregister_class(edit_layers.EL_PT_panel)
-        edit_layers.EL_PT_panel.bl_category = "Item"
-        edit_layers.EL_PT_panel.bl_order = -1000  # C パネル (トランスフォーム) より上に
-        bpy.utils.register_class(edit_layers.EL_PT_panel)
+        bpy.utils.unregister_class(edit_layers.ui.EL_PT_panel)
+        edit_layers.ui.EL_PT_panel.bl_category = "Item"
+        edit_layers.ui.EL_PT_panel.bl_order = -1000  # C パネル (トランスフォーム) より上に
+        bpy.utils.register_class(edit_layers.ui.EL_PT_panel)
         log(f"fallback: removed {removed} side panels, failed: {failed[:8]}")
 
     obj = bpy.context.scene.objects.get("Cube")

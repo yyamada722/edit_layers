@@ -49,7 +49,7 @@ def blocked(op, **kw):
 
 def main():
     edit_layers.register()
-    from edit_layers import _last_warnings
+    from edit_layers.common import _last_warnings
 
     bpy.ops.wm.read_factory_settings(use_empty=True)
     bpy.ops.mesh.primitive_cube_add()
@@ -222,7 +222,7 @@ def main():
     bpy.data.objects.remove(keeper)
 
     # ファイル再読込相当 (セッション記憶が消えた状態) では、マーカー付きでも削除しない
-    from edit_layers import _compare_names
+    from edit_layers.common import _compare_names
     bpy.ops.edit_layers.compare()
     dup2 = next(o for o in bpy.data.objects if o.get("el_compare_of") == obj.name)
     dup2_name = dup2.name
@@ -263,7 +263,7 @@ def main():
 
     # ========== 未記録編集の救済 ==========
 
-    from edit_layers import _is_dirty
+    from edit_layers.stack import _is_dirty
 
     # 記録を通さずに編集モードで直接モデリングしてしまう
     bpy.ops.object.mode_set(mode="EDIT")
@@ -381,7 +381,7 @@ def main():
     bpy.ops.edit_layers.commit()
 
     # 2a) セッション中のキー追加はロックされ、自動で取り消される
-    from edit_layers import _no_key_confirmed, _blocked_notice
+    from edit_layers.common import _no_key_confirmed, _blocked_notice
 
     check("lock: object confirmed", sk_obj.name in _no_key_confirmed)
     sk_obj.shape_key_add(name="Basis")
@@ -434,7 +434,8 @@ def main():
 
 
 def extra_tests():
-    from edit_layers import _last_warnings, _influence_local
+    from edit_layers.common import _last_warnings
+    from edit_layers.stack import _influence_local
 
     # ========== 属性の記録 (v0.8) ==========
     bpy.ops.mesh.primitive_cube_add()
