@@ -1,4 +1,4 @@
-"""オペレータ定義"""
+"""Operator definitions"""
 
 import json
 
@@ -72,7 +72,7 @@ class EL_OT_stack_init(bpy.types.Operator):
         mesh = obj.data
         stack = obj.edit_layers
 
-        # 全頂点に永続 ID を割り当てる
+        # Assign persistent IDs to all vertices
         bm = bmesh.new()
         bm.from_mesh(mesh)
         idl = _ensure_id_layer(bm)
@@ -84,7 +84,7 @@ class EL_OT_stack_init(bpy.types.Operator):
         bm.free()
         mesh.update()
 
-        # ID 付きの状態をベースメッシュとして退避する
+        # Keep a copy of the ID-carrying state as the base mesh
         base = mesh.copy()
         base.name = mesh.name + "_el_base"
         base.use_fake_user = True
@@ -109,8 +109,8 @@ class EL_OT_stack_init(bpy.types.Operator):
 class EL_OT_record_new(bpy.types.Operator):
     """Start recording a new layer at the tip of the active branch"""
 
-    # 記録中は編集/スカルプトなどモードを自由に行き来してよい。
-    # コミット時のメッシュ状態との差分が記録される。
+    # While recording, the user may freely switch between Edit/Sculpt modes.
+    # The diff against the mesh state at commit time is what gets recorded.
 
     bl_idname = "edit_layers.record_new"
     bl_label = "Record New Layer"
@@ -136,8 +136,8 @@ class EL_OT_record_new(bpy.types.Operator):
         stack = obj.edit_layers
         _ensure_branches(stack)
 
-        # 記録は enabled フラグに関係なく全レイヤー適用済みの状態に対して行う
-        # (無効レイヤー上に記録すると差分の意味が不定になるため)
+        # Recording always starts from the state with all layers applied, ignoring
+        # the enabled flags (recording on a disabled layer would make the diff ambiguous)
         _rebuild(obj, respect_enabled=False)
 
         bm = bmesh.new()
@@ -181,14 +181,14 @@ class EL_OT_record_edit(bpy.types.Operator):
             self.report({"ERROR"}, _T("Selected layer is not on the current branch"))
             return {"CANCELLED"}
 
-        # 対象レイヤーの直前までを構築してスナップショット
+        # Build up to just before the target layer and take the snapshot
         _rebuild(obj, upto=pos, respect_enabled=False)
         bm = bmesh.new()
         bm.from_mesh(obj.data)
         idl = _ensure_id_layer(bm)
         pre = _take_snapshot(bm, idl)
 
-        # 対象レイヤー自身を適用した状態から編集を始める
+        # Start editing from the state with the target layer itself applied
         warnings = []
         if layer.data:
             _apply_layer(bm, idl, json.loads(layer.data), warnings, layer.name)
@@ -236,7 +236,7 @@ class EL_OT_commit(bpy.types.Operator):
         stack = obj.edit_layers
         rec = _recording.get(obj.name)
         if rec is None:
-            # Blender 再起動などでスナップショットが失われた場合
+            # Snapshot lost, e.g. Blender was restarted while recording
             stack.is_recording = False
             self.report({"ERROR"}, _T("Recording data not found; recording aborted"))
             _safe_rebuild(obj)
@@ -263,7 +263,7 @@ class EL_OT_commit(bpy.types.Operator):
             return {"CANCELLED"}
 
         if uid == 0:
-            # 新規レイヤーをアクティブブランチの先端に追加する
+            # Append the new layer at the tip of the active branch
             br = stack.branches[stack.active_branch]
             layer = stack.layers.add()
             layer.uid = stack.next_uid
@@ -361,9 +361,9 @@ class EL_OT_adopt(bpy.types.Operator):
         if obj.mode != "OBJECT":
             bpy.ops.object.mode_set(mode="OBJECT")
 
-        # 「編集を始めた時点の状態」= 最後の再構築を再現する。
-        # 再構築履歴 (_last_state) があればその時のレイヤー構成・ブランチを使う。
-        # 履歴がない (ファイルを開き直した等) 場合は現在の構成で近似する。
+        # Reproduce "the state when editing started" = the last rebuild.
+        # Use the layer set and branch from the rebuild history (_last_state)
+        # when available; approximate from the current setup otherwise.
         st = _last_state.get(obj.name)
         by_uid = {l.uid: l for l in stack.layers}
         approx = False
@@ -376,7 +376,7 @@ class EL_OT_adopt(bpy.types.Operator):
             target_branch = stack.active_branch
             approx = True
 
-        # 編集前の状態を一時メッシュに再構成してスナップショット
+        # Reconstruct the pre-edit state into a temporary mesh and snapshot it
         tmp = bpy.data.meshes.new("_el_adopt_tmp")
         try:
             _rebuild_mesh(stack, pre_layers, tmp, respect_enabled=False)
@@ -388,7 +388,7 @@ class EL_OT_adopt(bpy.types.Operator):
         finally:
             bpy.data.meshes.remove(tmp)
 
-        # 現在のメッシュ (未記録編集入り) を post として差分化
+        # Diff the current mesh (containing the unrecorded edits) as post
         bm = bmesh.new()
         bm.from_mesh(obj.data)
         idl = _ensure_id_layer(bm)
@@ -402,9 +402,9 @@ class EL_OT_adopt(bpy.types.Operator):
             self.report({"INFO"}, _T("No edits to adopt"))
             return {"CANCELLED"}
 
-        # 編集を行ったブランチの先端にレイヤーを追加する
+        # Append the layer at the tip of the branch where the edits were made
         if stack.active_branch != target_branch:
-            stack.active_branch = target_branch  # dirty 中なので再構築は走らない
+            stack.active_branch = target_branch  # no rebuild fires while dirty
         br = stack.branches[target_branch]
         layer = stack.layers.add()
         layer.uid = stack.next_uid
@@ -453,7 +453,7 @@ class EL_OT_layer_remove(bpy.types.Operator):
             return {"CANCELLED"}
 
         uid, parent = layer.uid, layer.parent
-        # 子レイヤーとブランチ head を親につなぎ替える
+        # Reconnect child layers and branch heads to the parent
         for l in stack.layers:
             if l.parent == uid:
                 l.parent = parent
@@ -500,7 +500,7 @@ class EL_OT_layer_move(bpy.types.Operator):
             self.report({"ERROR"}, _T("Selected layer is not on the current branch"))
             return {"CANCELLED"}
 
-        # パス上で入れ替える相手 (parent 側が「上」)
+        # The swap partner on the path (the parent side is "up")
         if self.direction == "UP":
             if pos == 0:
                 return {"CANCELLED"}
@@ -510,7 +510,7 @@ class EL_OT_layer_move(bpy.types.Operator):
                 return {"CANCELLED"}
             upper, lower = layer, path[pos + 1]
 
-        # 分岐点をまたぐ入れ替えは他ブランチの意味が変わるため禁止する
+        # Swapping across a divergence point would change other branches, so forbid it
         if (
             _layer_branch_count(stack, upper.uid) > 1
             or _layer_branch_count(stack, lower.uid) > 1
@@ -518,7 +518,7 @@ class EL_OT_layer_move(bpy.types.Operator):
             self.report({"ERROR"}, _T("Cannot move across a shared layer"))
             return {"CANCELLED"}
 
-        # ... P -> upper -> lower -> C ... を ... P -> lower -> upper -> C ... にする
+        # Turn ... P -> upper -> lower -> C ... into ... P -> lower -> upper -> C ...
         lower_children = [l for l in stack.layers if l.parent == lower.uid]
         lower.parent, upper.parent = upper.parent, lower.uid
         for c in lower_children:
@@ -578,13 +578,13 @@ class EL_OT_layer_merge_down(bpy.types.Operator):
             )
             return {"CANCELLED"}
 
-        # 統合前 (parent の直前) と統合後の状態を作り、差分を取り直す
+        # Build the pre-merge state (just before parent) and re-diff the merged result
         warnings = []
         bm = bmesh.new()
         try:
             bm.from_mesh(stack.base_mesh)
             _ensure_id_layer(bm)
-            # 記録系と同じく enabled フラグは無視して決定的に積む
+            # Deterministic like the record flow: ignore the enabled flags
             for l in path[: pos - 1]:
                 if l.data:
                     _apply_layer(
@@ -602,7 +602,7 @@ class EL_OT_layer_merge_down(bpy.types.Operator):
 
         parent.data = json.dumps(_compute_diff(pre, post))
 
-        # コレクションから要素を削除すると既存の参照が失効するため、先に控える
+        # Removing a collection item invalidates existing references, so save these first
         uid, parent_uid, parent_name = layer.uid, parent.uid, parent.name
         for l in stack.layers:
             if l.parent == uid:
@@ -645,7 +645,7 @@ class EL_OT_bake_upto(bpy.types.Operator):
         if pos is None:
             self.report({"ERROR"}, _T("Selected layer is not on the current branch"))
             return {"CANCELLED"}
-        # 幹以外のブランチが失われないよう、全ブランチが通っている必要がある
+        # Every branch must pass through the layer so no branch loses its trunk
         if _layer_branch_count(stack, layer.uid) != len(stack.branches):
             self.report(
                 {"ERROR"}, _T("All branches must pass through the selected layer")
@@ -659,7 +659,7 @@ class EL_OT_bake_upto(bpy.types.Operator):
             )
             return {"CANCELLED"}
 
-        # ベースメッシュに焼き込む (from_mesh で読み込んでから書き戻すので安全)
+        # Bake into the base mesh (safe: from_mesh reads fully before writing back)
         _rebuild_mesh(stack, path, stack.base_mesh, respect_enabled=True, upto=pos + 1)
 
         removed_uids = {l.uid for l in target}
@@ -705,14 +705,14 @@ class EL_OT_branch_create(bpy.types.Operator):
         if layer is not None and any(l.uid == layer.uid for l in path):
             head = layer.uid
         else:
-            # レイヤー未選択なら現在のブランチ先端から分岐する
+            # No layer selected: branch from the current branch tip instead
             head = stack.branches[stack.active_branch].head_uid
 
         br = stack.branches.add()
         br.name = f"Branch {len(stack.branches)}"
         br.head_uid = head
         _assign_branch_color(stack, br)
-        stack.active_branch = len(stack.branches) - 1  # update で再構築される
+        stack.active_branch = len(stack.branches) - 1  # the update callback rebuilds
         self.report(
             {"INFO"},
             _T('Created branch "{name}". New recordings will diverge from here').format(
@@ -742,7 +742,7 @@ class EL_OT_branch_remove(bpy.types.Operator):
         stack = obj.edit_layers
         bi = stack.active_branch
 
-        # このブランチだけが使うレイヤーを特定する
+        # Find the layers used only by this branch
         mine = {l.uid for l in _branch_path(stack, bi)}
         others = set()
         for j in range(len(stack.branches)):
@@ -806,7 +806,7 @@ class EL_OT_compare(bpy.types.Operator):
             dup = obj.copy()
             dup.data = mesh
             dup.name = f"{obj.name} [{br.name}]"
-            # 比較用コピーにはスタックを持たせない
+            # Comparison copies must not carry a stack of their own
             ds = dup.edit_layers
             ds.initialized = False
             ds.is_recording = False

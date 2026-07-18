@@ -1,4 +1,4 @@
-"""プロパティグループ定義と更新コールバック"""
+"""Property group definitions and update callbacks"""
 
 import bpy
 from bpy.props import (
@@ -24,8 +24,8 @@ def _on_enabled_update(self, context):
     obj = context.object
     if obj and obj.type == "MESH":
         stack = obj.edit_layers
-        # 未記録の編集がある間は再構築を保留する (編集を上書きしないため)。
-        # シェイプキーがある間も保留する (再構築がキーを破壊するため)。
+        # Defer rebuilds while unrecorded edits exist (do not overwrite them).
+        # Also defer while shape keys exist (a rebuild would destroy them).
         if (
             stack.initialized
             and not stack.is_recording
@@ -52,19 +52,19 @@ def _on_branch_switch(self, context):
 class EL_Layer(bpy.types.PropertyGroup):
     name: StringProperty(name="Name", default="Layer")
     enabled: BoolProperty(name="Enabled", default=True, update=_on_enabled_update)
-    # レイヤーの永続 UID (頂点 ID とは別系統。0 = 未割り当て)
+    # Persistent layer UID (separate from vertex IDs; 0 = unassigned)
     uid: IntProperty(default=0)
-    # 親レイヤーの UID (0 = ベースメッシュ直下)
+    # UID of the parent layer (0 = directly on the base mesh)
     parent: IntProperty(default=0)
-    # 差分 JSON
+    # Diff JSON
     data: StringProperty(default="")
 
 
 class EL_Branch(bpy.types.PropertyGroup):
     name: StringProperty(name="Name", default="Branch")
-    # このブランチの末端レイヤーの UID (0 = ベースメッシュのみ)
+    # UID of this branch's tip layer (0 = base mesh only)
     head_uid: IntProperty(default=0)
-    # 識別色 (リストのチップと分岐バッジに表示。クリックで変更可)
+    # Identification color (shown as list chips and divergence badges; click to change)
     color: FloatVectorProperty(
         name="Color",
         subtype="COLOR",
@@ -81,12 +81,12 @@ class EL_Stack(bpy.types.PropertyGroup):
     active_index: IntProperty(default=0)
     branches: CollectionProperty(type=EL_Branch)
     active_branch: IntProperty(default=0, update=_on_branch_switch)
-    # 次に割り当てる頂点 ID (0 は未割り当てを意味するので 1 から)
+    # Next vertex ID to assign (0 means unassigned, so start from 1)
     next_id: IntProperty(default=1)
-    # 次に割り当てるレイヤー UID
+    # Next layer UID to assign
     next_uid: IntProperty(default=1)
     is_recording: BoolProperty(default=False)
-    # 記録中のレイヤー UID (0 = 新規レイヤー)
+    # UID of the layer being recorded (0 = new layer)
     recording_uid: IntProperty(default=0)
     base_mesh: PointerProperty(type=bpy.types.Mesh)
     show_influence: BoolProperty(

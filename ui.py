@@ -1,4 +1,4 @@
-"""パネル・リスト・メニューとビューポートオーバーレイ"""
+"""Panel, lists, menu and the viewport overlay"""
 
 import bpy
 
@@ -35,12 +35,12 @@ from .stack import (
     _poll_mesh_object,
 )
 
-# 同梱ドキュメントは配布パッケージに含めない方針のため、ヘルプはオンラインで開く
+# Bundled documentation is excluded from the package, so help opens online
 HELP_URL = "https://github.com/yyamada722/edit_layers"
 
 
 def _draw_influence():
-    """選択レイヤーの影響頂点をオーバーレイ描画する (橙: 移動 / 緑: 生成)"""
+    """Draw vertices affected by the active layer (orange: moved / green: created)"""
     obj = bpy.context.object
     if obj is None or obj.type != "MESH":
         return
@@ -57,8 +57,8 @@ def _draw_influence():
     import gpu
     from gpu_extras.batch import batch_for_shader
 
-    # ポイント描画は専用シェーダを使う (Vulkan バックエンドでは固定機能の
-    # ポイントサイズが効かないため)。無い環境では UNIFORM_COLOR に落とす。
+    # Use the dedicated point shader (fixed-function point size does not work
+    # on the Vulkan backend). Fall back to UNIFORM_COLOR where unavailable.
     try:
         shader = gpu.shader.from_builtin("POINT_UNIFORM_COLOR")
         is_point_shader = True
@@ -95,7 +95,7 @@ def _draw_influence():
 
 _draw_handle = None
 class EL_MT_layer_menu(bpy.types.Menu):
-    """レイヤーリスト横の追加操作メニュー"""
+    """Extra layer operations shown next to the layer list"""
 
     bl_idname = "EL_MT_layer_menu"
     bl_label = "Layer Operations"
@@ -105,11 +105,11 @@ class EL_MT_layer_menu(bpy.types.Menu):
         layout.operator(EL_OT_layer_merge_down.bl_idname, icon="TRIA_UP_BAR")
         layout.operator(EL_OT_bake_upto.bl_idname, icon="IMPORT")
 class EL_UL_layers(bpy.types.UIList):
-    """アクティブブランチのパス上のレイヤーだけを根→先端の順で表示する
+    """Show only layers on the active branch path, in root-to-head order
 
-    行頭 (1 枠固定): このブランチ専用のレイヤーにはアクティブブランチの色チップ、
-    共有レイヤーは空白。どのブランチがどこから分かれるかは右側の
-    「← ブランチ名」バッジ (色チップ付き) が示す。
+    Leading slot (fixed width): a color chip of the active branch for layers
+    exclusive to it, blank for shared layers. Which branch diverges where is
+    shown by the "<- branch name" badge on the right (with a color dot).
     """
 
     def draw_item(
@@ -123,7 +123,7 @@ class EL_UL_layers(bpy.types.UIList):
             ind = row.row(align=True)
             ind.ui_units_x = 0.5
             if _layer_branch_count(stack, item.uid) == 1:
-                # 表示専用の色ドット (クリック・ツールチップなし)
+                # Display-only color dot (no click, no tooltip)
                 br = stack.branches[stack.active_branch]
                 ind.template_node_socket(color=(*br.color, 1.0))
             else:
@@ -132,7 +132,7 @@ class EL_UL_layers(bpy.types.UIList):
         if multi:
             div = _divergence_map(stack).get(item.uid)
             if div:
-                # 分岐バッジ: ブランチ色のドット + 「← ブランチ名」(表示専用)
+                # Divergence badge: branch color dot + "<- branch name" (display only)
                 sub = row.row(align=True)
                 sub.alignment = "RIGHT"
                 for bi in div[:3]:
@@ -173,7 +173,7 @@ class EL_UL_layers(bpy.types.UIList):
 
 
 class EL_UL_branches(bpy.types.UIList):
-    """ラジオボタンでアクティブブランチを示し、右側に共有/専用レイヤー数を表示する"""
+    """Radio buttons mark the active branch; shared/own layer counts on the right"""
 
     def draw_item(
         self, context, layout, data, item, icon,
@@ -244,7 +244,7 @@ class EL_PT_panel(bpy.types.Panel):
             row.operator(EL_OT_commit.bl_idname, icon="CHECKMARK")
             row.operator(EL_OT_cancel.bl_idname, text="Discard", icon="X")
         elif obj.mode in {"EDIT", "SCULPT"}:
-            # 記録を通さずに編集/スカルプトモードに入っている
+            # The user entered Edit/Sculpt mode without recording
             box = layout.box()
             box.alert = True
             if obj.mode == "EDIT":
@@ -280,7 +280,7 @@ class EL_PT_panel(bpy.types.Panel):
                     icon="FILE_REFRESH",
                 )
 
-        # ブランチ
+        # Branches
         if stack.branches:
             col = layout.column()
             col.label(
@@ -302,7 +302,7 @@ class EL_PT_panel(bpy.types.Panel):
                 )
                 sub.operator(EL_OT_compare_clear.bl_idname, text="Clear", icon="X")
 
-        # レイヤー (アクティブブランチのパス)
+        # Layers (path of the active branch)
         col = layout.column()
         hdr = col.row(align=True)
         if stack.branches:

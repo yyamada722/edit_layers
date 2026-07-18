@@ -1,16 +1,16 @@
-"""Edit Layers — 3ds Max の Edit Poly のようなレイヤーベースの非破壊メッシュ編集スタック
+"""Edit Layers — layer-based non-destructive mesh editing stack (Edit Poly style)
 
-エントリポイント。クラス登録とアプリケーションハンドラの管理のみを行い、
-実装は以下のモジュールに分かれている:
+Entry point: this module only handles class registration and application
+handler management. The implementation lives in the following modules:
 
-- common: 定数とセッション状態
-- i18n: UI 翻訳
-- core: 差分エンジン (永続 ID / スナップショット / 差分 / 適用)
-- stack: スタック運用 (ブランチ / 再構築 / 状態検出 / ガード)
-- props: プロパティグループ
-- operators: オペレータ
-- ui: パネル・リスト・オーバーレイ
-- handlers: シェイプキーロック等のアプリケーションハンドラ
+- common: constants and session state
+- i18n: UI translations
+- core: diff engine (persistent IDs / snapshots / diff / apply)
+- stack: stack management (branches / rebuild / state detection / guards)
+- props: property groups
+- operators: operators
+- ui: panel, lists and viewport overlay
+- handlers: application handlers (shape key lock, session reset)
 """
 
 import bpy
@@ -62,7 +62,7 @@ def register():
         bpy.app.handlers.load_post.append(handlers._el_load_post)
     ui.register_draw_handler()
     try:
-        # アドオン有効化がファイル読み込みより先の場合は bpy.data に触れない
+        # bpy.data may be restricted while add-ons are enabled during startup
         handlers._rescan_no_keys()
     except AttributeError:
         pass

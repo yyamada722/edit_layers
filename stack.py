@@ -1,4 +1,4 @@
-"""スタック運用: ブランチ解決・再構築・状態検出・ガード"""
+"""Stack management: branch resolution, rebuild, state detection, guards"""
 
 import json
 
@@ -20,7 +20,7 @@ from .i18n import _T
 
 
 def _ensure_branches(stack):
-    """v0.1 の線形スタック (uid 未割り当て) をツリー構造に移行する"""
+    """Migrate a v0.1 linear stack (no uids assigned) to the tree structure"""
     if stack.branches:
         return
     prev = 0
@@ -39,9 +39,9 @@ def _ensure_branches(stack):
 
 
 def _branch_path(stack, branch_index=None):
-    """ブランチの head から根まで遡り、根→head 順のレイヤーリストを返す"""
+    """Walk from the branch head to the root; return layers in root-to-head order"""
     if not stack.branches:
-        # 移行前 (v0.1 データ) は登録順をそのまま使う
+        # Pre-migration (v0.1) data: use registration order as-is
         return list(stack.layers)
     if branch_index is None:
         branch_index = stack.active_branch
@@ -60,7 +60,7 @@ def _branch_path(stack, branch_index=None):
 
 
 def _layer_branches(stack, uid):
-    """このレイヤーを通るブランチ index のリスト"""
+    """List of branch indices whose path contains this layer"""
     return [
         bi
         for bi in range(len(stack.branches))
@@ -69,15 +69,15 @@ def _layer_branches(stack, uid):
 
 
 def _layer_branch_count(stack, uid):
-    """このレイヤーを通るブランチの数 (2 以上なら共有レイヤー)"""
+    """Number of branches passing through this layer (2+ means shared)"""
     return len(_layer_branches(stack, uid))
 
 
 def _divergence_map(stack):
-    """アクティブパス上の uid -> そこを分岐点とする他ブランチ index のリスト
+    """Map of uid on the active path -> other branch indices diverging there
 
-    他ブランチのパスとアクティブパスの共有部分は (ツリーなので) 必ず根から
-    連続するため、共有が途切れる直前のレイヤーが分岐点になる。
+    The shared part of another branch's path is always contiguous from the
+    root (it is a tree), so the last shared layer is the divergence point.
     """
     active_set = {l.uid for l in _branch_path(stack)}
     div = {}
@@ -96,7 +96,7 @@ def _divergence_map(stack):
 
 
 def _branch_layer_stats(stack, branch_index):
-    """(共有レイヤー数, このブランチ専用のレイヤー数) を返す"""
+    """Return (number of shared layers, number of layers exclusive to this branch)"""
     mine = {l.uid for l in _branch_path(stack, branch_index)}
     others = set()
     for j in range(len(stack.branches)):
@@ -107,9 +107,9 @@ def _branch_layer_stats(stack, branch_index):
 
 
 def _rebuild_mesh(stack, path, mesh, respect_enabled=True, upto=None):
-    """ベースメッシュから path のレイヤーを順に適用して mesh に書き込む
+    """Apply the layers of path in order onto a copy of the base mesh, write to mesh
 
-    戻り値: (警告リスト, 実際に適用したレイヤー uid のリスト)
+    Returns (warnings, list of layer uids actually applied).
     """
     warnings = []
     applied = []
@@ -124,8 +124,8 @@ def _rebuild_mesh(stack, path, mesh, respect_enabled=True, upto=None):
                 continue
             if not layer.data:
                 continue
-            # 属性適用で頂点レイヤーが追加されると既存のレイヤーハンドルが
-            # 無効になるため、ID レイヤーは毎回取り直す
+            # Applying attributes may add vertex layers, which invalidates
+            # existing layer handles, so re-fetch the ID layer every iteration
             idl = _ensure_id_layer(bm)
             _apply_layer(bm, idl, json.loads(layer.data), warnings, layer.name)
             applied.append(layer.uid)
@@ -138,11 +138,11 @@ def _rebuild_mesh(stack, path, mesh, respect_enabled=True, upto=None):
 
 
 def _fingerprint(mesh):
-    """未記録編集の検出用にメッシュの指紋を取る
+    """Take a mesh fingerprint used to detect unrecorded edits
 
-    要素数に加えて座標の絶対値和と位置依存の重み付き和を使う。単純な絶対値和
-    だけだと対称な編集 (例: ±x の頂点を同時に +0.4) が相殺して検出漏れするため、
-    要素ごとに異なる重みを掛けた和も併用する。numpy でメッシュサイズに対して高速。
+    Uses element counts plus an absolute-coordinate sum and a position-weighted
+    sum: the plain absolute sum cancels out on symmetric edits (e.g. moving
+    +/-x vertices together), so a per-index weighted sum is added. Fast via numpy.
     """
     import numpy as np
 
@@ -161,11 +161,11 @@ def _fingerprint(mesh):
 
 
 def _rebuild(obj, upto=None, respect_enabled=True, branch_index=None):
-    """アクティブブランチ (または指定ブランチ) でオブジェクトを再構築する"""
+    """Rebuild the object from the active (or given) branch"""
     stack = obj.edit_layers
     path = _branch_path(stack, branch_index)
     warnings, applied = _rebuild_mesh(stack, path, obj.data, respect_enabled, upto)
-    _rebuild_serial[0] += 1  # 影響ハイライトのキャッシュを無効化する
+    _rebuild_serial[0] += 1  # invalidate the influence highlight cache
     _last_warnings[obj.name] = warnings
     _last_state[obj.name] = {
         "fp": _fingerprint(obj.data),
@@ -176,10 +176,10 @@ def _rebuild(obj, upto=None, respect_enabled=True, branch_index=None):
 
 
 def _safe_rebuild(obj):
-    """シェイプキーがある場合は再構築せず、状態追跡だけリセットする
+    """Skip the rebuild when shape keys exist; only reset state tracking
 
-    再構築 (bmesh -> mesh) はシェイプキーを Basis で上書きしてしまうため、
-    キーが検出されたらメッシュには触らない。戻り値 None がスキップを表す。
+    Rebuilding (bmesh -> mesh) would overwrite shape key data with the basis,
+    so the mesh is left untouched when keys are detected. Returns None on skip.
     """
     if _has_shape_keys(obj):
         _last_state.pop(obj.name, None)
@@ -188,10 +188,10 @@ def _safe_rebuild(obj):
 
 
 def _is_dirty(obj):
-    """最後の再構築以降に未記録の編集が入っているか
+    """Whether unrecorded edits exist since the last rebuild
 
-    編集モード中はメッシュデータが未確定なので判定しない。再構築履歴がない
-    (ファイルを開き直した直後など) 場合も判定できないので False を返す。
+    Not evaluated in edit modes (mesh data is not flushed yet). Also returns
+    False when there is no rebuild history (e.g. right after loading a file).
     """
     if obj.mode != "OBJECT":
         return False
@@ -206,11 +206,11 @@ def _active_layer(stack):
         return stack.layers[stack.active_index]
     return None
 def _influence_local(obj):
-    """アクティブレイヤーが影響した頂点のローカル座標を返す
+    """Return local coordinates of vertices affected by the active layer
 
-    戻り値: (moved 座標リスト, 生成座標リスト) / 表示条件を満たさない場合 None。
-    描画コールバックから毎フレーム呼ばれるため、レイヤーと再構築が変わらない
-    限りキャッシュを返す。
+    Returns (moved coords, created coords), or None when display conditions
+    are not met. Called on every redraw from the draw callback, so results are
+    cached while the layer and rebuild state stay unchanged.
     """
     stack = obj.edit_layers
     if not (
@@ -262,7 +262,7 @@ def _poll_mesh_object(context):
 
 
 def _poll_stack_idle(context):
-    """初期化済みで記録中でないこと"""
+    """Initialized and not currently recording"""
     if not _poll_mesh_object(context):
         return False
     stack = context.object.edit_layers
@@ -270,7 +270,7 @@ def _poll_stack_idle(context):
 
 
 def _guard_dirty(op, context):
-    """未記録の編集があるとき、再構築でそれを消してしまう操作をブロックする"""
+    """Block operations that would rebuild away unrecorded edits"""
     if _is_dirty(context.object):
         op.report(
             {"ERROR"},
@@ -288,10 +288,10 @@ def _has_shape_keys(obj):
 
 
 def _guard_shape_keys(op, context):
-    """シェイプキーがあるとき、再構築でキーを破壊する操作をブロックする
+    """Block operations that would destroy shape keys via a rebuild
 
-    再構築 (bmesh -> mesh) はシェイプキーのデータを Basis で上書きしてしまうため、
-    キーが検出されたら破壊的な操作を全て止める。
+    Rebuilding (bmesh -> mesh) overwrites shape key data with the basis, so
+    every destructive operation is stopped while keys are detected.
     """
     if _has_shape_keys(context.object):
         op.report(
@@ -305,13 +305,13 @@ def _guard_shape_keys(op, context):
         return True
     return False
 def _clear_compares(obj):
-    """比較用の複製を削除する
+    """Delete the comparison duplicates
 
-    削除するのは、このセッションで比較機能自身が作ったと記憶しているもの
-    (_compare_names) だけ。マーカーが付いていても身に覚えのないオブジェクト
-    (ユーザーが比較複製をさらに複製したもの、保存を跨いだもの) は削除せず、
-    マーカーだけ外して通常オブジェクトとして残す。
-    戻り値: (削除数, マーカー解除して残した数)
+    Only objects this session's compare feature remembers creating
+    (_compare_names) are deleted. Marker-carrying objects we do not recognize
+    (user-made copies of comparison duplicates, or objects loaded from a saved
+    file) are kept; only their marker is removed so they become regular objects.
+    Returns (number removed, number released).
     """
     removed = 0
     released = 0

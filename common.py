@@ -1,45 +1,45 @@
-"""定数とセッション状態 (モジュール横断で共有するキャッシュ)"""
+"""Constants and session state (caches shared across modules)"""
 
 
-# 永続頂点 ID を保存する属性名 (0 = 未割り当て)
+# Attribute name storing the persistent vertex ID (0 = unassigned)
 ID_ATTR = "el_id"
-# 比較用オブジェクトに付けるマーカー
+# Marker custom property for comparison duplicates
 COMPARE_PROP = "el_compare_of"
-# 移動とみなす最小距離
+# Minimum distance considered a move
 EPS = 1e-6
 
-# 記録中の編集前スナップショット (オブジェクト名 -> {"pre": snapshot, "uid": int})
+# Pre-edit snapshot while recording (object name -> {"pre": snapshot, "uid": int})
 _recording = {}
-# 直近の再構築で出た警告 (オブジェクト名 -> list[str])
+# Warnings from the last rebuild (object name -> list[str])
 _last_warnings = {}
-# 直近の再構築の状態 (オブジェクト名 -> {"fp": 指紋, "uids": 適用レイヤー, "branch": int})
-# 未記録編集の検出と救済 (取り込み) に使う
+# State of the last rebuild (object name -> {"fp": fingerprint, "uids": applied layers, "branch": int})
+# Used to detect and adopt unrecorded edits
 _last_state = {}
-# セッション中に「シェイプキーなし」を確認済みのスタックオブジェクト名。
-# このセットに入っているオブジェクトにキーが現れたら「追加された」と断定して
-# ロック (自動削除) を発動できる。入っていない場合 (v0.4 以前のファイル等) は
-# 既存データを消さないよう、ガード + 警告モードに留める。
+# Names of stack objects confirmed to have no shape keys during this session.
+# If a key appears on an object in this set, it must have just been added, so
+# the lock (automatic removal) can fire. Objects not in the set (files saved
+# by older versions etc.) fall back to guard + warning mode to keep their data.
 _no_key_confirmed = set()
-# シェイプキー追加をブロックした通知 (オブジェクト名 -> True)
+# Notices about blocked shape key additions (object name -> True)
 _blocked_notice = {}
-# このセッションで比較機能が作った複製の名前。マーカー (COMPARE_PROP) は
-# オブジェクト複製でコピーされてしまうため、削除して良いものはここで区別する
+# Names of duplicates created by the compare feature in this session. The
+# marker (COMPARE_PROP) is copied on object duplication, so only names in this set may be deleted
 _compare_names = set()
-# 再構築のたびに増えるカウンタ (影響ハイライトのキャッシュ無効化用)
+# Counter bumped on every rebuild (invalidates the influence highlight cache)
 _rebuild_serial = [0]
-# 影響ハイライトのキャッシュ {"key": tuple, "data": (moved座標, 生成座標)}
+# Influence highlight cache {"key": tuple, "data": (moved coords, created coords)}
 _influence_cache = {}
 
-# ブランチに自動で割り当てる色 (作成順に巡回)
+# Colors assigned to branches automatically (cycled in creation order)
 _BRANCH_PALETTE = (
-    (0.85, 0.35, 0.35),  # 赤
-    (0.35, 0.65, 0.95),  # 青
-    (0.45, 0.80, 0.45),  # 緑
-    (0.95, 0.75, 0.35),  # 橙
-    (0.75, 0.50, 0.90),  # 紫
-    (0.40, 0.85, 0.80),  # 青緑
-    (0.95, 0.55, 0.75),  # 桃
-    (0.70, 0.70, 0.70),  # 灰
+    (0.85, 0.35, 0.35),  # red
+    (0.35, 0.65, 0.95),  # blue
+    (0.45, 0.80, 0.45),  # green
+    (0.95, 0.75, 0.35),  # orange
+    (0.75, 0.50, 0.90),  # purple
+    (0.40, 0.85, 0.80),  # teal
+    (0.95, 0.55, 0.75),  # pink
+    (0.70, 0.70, 0.70),  # gray
 )
 
 

@@ -1,4 +1,4 @@
-"""差分エンジン: 永続 ID / スナップショット / 差分計算 / 適用"""
+"""Diff engine: persistent IDs / snapshots / diff computation / apply"""
 
 import bmesh
 from mathutils import Vector
@@ -8,26 +8,26 @@ from .i18n import _T
 
 
 def _ensure_id_layer(bm):
-    """bmesh に永続 ID レイヤーを確保して返す"""
+    """Ensure and return the persistent ID layer on the bmesh"""
     idl = bm.verts.layers.int.get(ID_ATTR)
     if idl is None:
         idl = bm.verts.layers.int.new(ID_ATTR)
     return idl
 
 
-# 記録する属性のデフォルト値 (これと同値なら差分に含めない)
+# Default attribute values (values equal to these are omitted from diffs)
 _FACE_ATTR_DEFAULT = (0, False)  # (material_index, smooth)
 _EDGE_ATTR_DEFAULT = (False, True, 0.0, 0.0)  # (seam, smooth, crease, bevel_weight)
 _VERT_ATTR_DEFAULT = (0.0, 0.0)  # (crease, bevel_weight)
 
 
 def _take_snapshot(bm, idl):
-    """現在の bmesh の状態を ID 基準で記録する
+    """Snapshot the current bmesh state keyed by persistent IDs
 
     verts: {id: (x, y, z)}
-    faces: {frozenset(ids): [ids (ループ順)]}
+    faces: {frozenset(ids): [ids (loop order)]}
     edges: {frozenset((a, b))}
-    face_attrs / edge_attrs / vert_attrs: 要素キー -> 属性タプル
+    face_attrs / edge_attrs / vert_attrs: element key -> attribute tuple
     """
     ce = bm.edges.layers.float.get("crease_edge")
     be = bm.edges.layers.float.get("bevel_weight_edge")
@@ -86,12 +86,12 @@ def _take_snapshot(bm, idl):
 
 
 def _resolve_ids(bm, idl, pre_verts, next_id):
-    """編集後の bmesh の ID を正規化する
+    """Normalize persistent IDs of the edited bmesh
 
-    - 重複 ID (subdivide 等で属性が複製されたもの) は、編集前の位置に最も近い
-      1 頂点だけが ID を保持し、残りは新規扱いにする。
-    - ID 0 (新規頂点) には新しい ID を振る。
-    戻り値: 更新後の next_id
+    - Duplicated IDs (attribute copies from subdivide etc.): only the vertex
+      closest to its pre-edit position keeps the ID, the rest become new.
+    - ID 0 (new vertices) get fresh IDs assigned.
+    Returns the updated next_id.
     """
     by_id = {}
     for v in bm.verts:
@@ -109,7 +109,7 @@ def _resolve_ids(bm, idl, pre_verts, next_id):
             if v is not keep:
                 v[idl] = 0
 
-    # 他オブジェクトからのペースト等で next_id より大きい ID が混入しても衝突しないようにする
+    # Avoid collisions with IDs pasted from other objects that exceed next_id
     max_id = max((v[idl] for v in bm.verts), default=0)
     next_id = max(next_id, max_id + 1)
 
@@ -121,13 +121,13 @@ def _resolve_ids(bm, idl, pre_verts, next_id):
 
 
 def _face_edge_pairs(ids):
-    """面の頂点 ID リストから、その面が張るエッジの集合を返す"""
+    """Return the set of edges spanned by a face given as a vertex ID list"""
     n = len(ids)
     return {frozenset((ids[j], ids[(j + 1) % n])) for j in range(n)}
 
 
 def _compute_diff(pre, post):
-    """編集前後のスナップショットから、レイヤーとして保存する差分を作る"""
+    """Build the diff stored in a layer from the pre/post edit snapshots"""
     moved = {}
     for i, co in post["verts"].items():
         p = pre["verts"].get(i)
@@ -143,19 +143,19 @@ def _compute_diff(pre, post):
 
     new_faces = [ids for key, ids in post["faces"].items() if key not in pre["faces"]]
 
-    # 新規面を作れば付随するエッジも生成されるので、面に含まれないエッジだけ記録する
+    # Creating new faces also creates their edges, so only record edges not covered by a new face
     covered = set()
     for ids in new_faces:
         covered |= _face_edge_pairs(ids)
     new_edges = [sorted(p) for p in (post["edges"] - pre["edges"]) if p not in covered]
 
-    # 頂点削除で連鎖的に消えるエッジは記録しない
+    # Do not record edges that disappear as a side effect of vertex deletion
     deleted_edge_set = {
         p for p in (pre["edges"] - post["edges"]) if not (p & dead)
     }
     deleted_edges = [sorted(p) for p in deleted_edge_set]
 
-    # 頂点削除・エッジ削除で連鎖的に消える面は記録しない
+    # Do not record faces that disappear as a side effect of vertex/edge deletion
     deleted_faces = []
     for key, ids in pre["faces"].items():
         if key in post["faces"] or (key & dead):
@@ -164,7 +164,7 @@ def _compute_diff(pre, post):
             continue
         deleted_faces.append(sorted(key))
 
-    # 属性の差分 (デフォルト値はスナップショット側で省かれている)
+    # Attribute diffs (defaults are already omitted on the snapshot side)
     face_attrs = []
     for key in set(pre["face_attrs"]) | set(post["face_attrs"]):
         if key not in post["faces"]:
@@ -217,12 +217,12 @@ def _compute_diff(pre, post):
 
 
 def _compute_anchors(pre, post, new_verts):
-    """新規頂点をアンカー相対で表す
+    """Express new vertices relative to anchor vertices
 
-    新規頂点ごとに、編集前から生き残っている頂点のうち最も近い 3 点を
-    アンカーとして選び、その重心からのオフセットを保存する。再生時に
-    アンカーの現在位置から位置を復元することで、上流レイヤーの変形に
-    新規ジオメトリが追従する (アンカーが失われた場合は絶対座標に戻る)。
+    For each new vertex, pick the 3 nearest vertices that survived from the
+    pre-edit state as anchors and store the offset from their centroid. On
+    replay the position is restored from the anchors' current positions, so new
+    geometry follows upstream deformation (absolute fallback when anchors are lost).
     """
     if not new_verts:
         return {}
@@ -258,7 +258,7 @@ def _diff_is_empty(diff):
 
 
 def _find_face(vmap, idl, ids):
-    """頂点 ID の集合から既存の面を探す"""
+    """Find an existing face from a set of vertex IDs"""
     v0 = vmap.get(ids[0])
     if v0 is None or not v0.is_valid:
         return None
@@ -270,14 +270,14 @@ def _find_face(vmap, idl, ids):
 
 
 def _apply_layer(bm, idl, data, warnings, layer_name):
-    """1 レイヤー分の差分を bmesh に適用する
+    """Apply one layer's diff to the bmesh
 
-    削除系で対象が見つからない場合は黙ってスキップする (上流の変更で既に
-    消えているだけなので実害がない)。生成・移動系で参照頂点が見つからない
-    場合は警告を残してスキップする。
+    Deletions whose target is missing are skipped silently (it just means an
+    upstream change already removed it). Creations and moves referencing
+    missing vertices are skipped with a warning.
     """
-    # カスタムデータレイヤーの追加はその領域の要素参照・レイヤーハンドルを
-    # 無効化するため、要素参照を取る前に必要なレイヤーを全て確保しておく
+    # Adding a custom data layer invalidates element references and layer
+    # handles of that domain, so ensure all needed layers before taking references
     if any(row[3] for row in data.get("edge_attrs", [])):
         if bm.edges.layers.float.get("crease_edge") is None:
             bm.edges.layers.float.new("crease_edge")
@@ -290,18 +290,18 @@ def _apply_layer(bm, idl, data, warnings, layer_name):
     if any(row[2] for row in data.get("vert_attrs", [])):
         if bm.verts.layers.float.get("bevel_weight_vert") is None:
             bm.verts.layers.float.new("bevel_weight_vert")
-    idl = _ensure_id_layer(bm)  # 頂点レイヤー追加でハンドルが失効するため取り直す
+    idl = _ensure_id_layer(bm)  # re-fetch: adding vertex layers invalidates the handle
 
     vmap = {v[idl]: v for v in bm.verts if v[idl] != 0}
 
-    # 1. 頂点削除 (付随するエッジ・面も連鎖削除される)
+    # 1. Delete vertices (attached edges/faces are deleted in cascade)
     doomed = [vmap.pop(i) for i in data.get("deleted_verts", []) if i in vmap]
     if doomed:
         bmesh.ops.delete(bm, geom=doomed, context="VERTS")
 
-    # 2. エッジ削除 (付随する面は連鎖削除、頂点は残す)
-    # 'EDGES' は孤立した頂点まで削除してしまい、後続レイヤーの参照が壊れるため
-    # 'EDGES_FACES' を使う。頂点の削除は deleted_verts で明示的に行われる。
+    # 2. Delete edges (attached faces cascade, vertices are kept)
+    # 'EDGES' would also delete isolated vertices and break downstream layer
+    # references, so use 'EDGES_FACES'. Vertex deletion is explicit via deleted_verts.
     edges = []
     for a, b in data.get("deleted_edges", []):
         va, vb = vmap.get(a), vmap.get(b)
@@ -312,7 +312,7 @@ def _apply_layer(bm, idl, data, warnings, layer_name):
     if edges:
         bmesh.ops.delete(bm, geom=edges, context="EDGES_FACES")
 
-    # 3. 面削除 (面のみ。頂点・エッジは残す)
+    # 3. Delete faces (faces only; keep vertices and edges)
     faces = []
     for ids in data.get("deleted_faces", []):
         f = _find_face(vmap, idl, ids)
@@ -321,9 +321,9 @@ def _apply_layer(bm, idl, data, warnings, layer_name):
     if faces:
         bmesh.ops.delete(bm, geom=faces, context="FACES_ONLY")
 
-    # 4. 頂点移動 (delta)
-    # アンカー相対の新規頂点が「移動後のアンカー位置」を参照できるよう、
-    # 生成より先に適用する (差分の計算も移動後の位置を基準にしている)
+    # 4. Move vertices (delta)
+    # Applied before creation so anchor-relative new vertices can reference
+    # the anchors' post-move positions (the diff is computed against them too)
     for i, d in data.get("moved", {}).items():
         v = vmap.get(int(i))
         if v is None or not v.is_valid:
@@ -331,9 +331,9 @@ def _apply_layer(bm, idl, data, warnings, layer_name):
             continue
         v.co += Vector(d)
 
-    # 5. 新規頂点 (JSON のキーは文字列になっているので int に戻す)
-    # アンカー情報があれば「アンカー重心 + オフセット」で位置を復元し、
-    # 上流レイヤーの変形に追従させる。なければ絶対座標 (旧形式) で生成する。
+    # 5. New vertices (JSON keys are strings, convert back to int)
+    # With anchor data, restore the position as "anchor centroid + offset" so
+    # it follows upstream deformation; otherwise use absolute coordinates (legacy format).
     anchors = data.get("anchors", {})
     for i_str, co in data.get("new_verts", {}).items():
         i = int(i_str)
@@ -354,7 +354,7 @@ def _apply_layer(bm, idl, data, warnings, layer_name):
         v[idl] = i
         vmap[i] = v
 
-    # 6. 新規エッジ (ワイヤーエッジなど、面に付随しないもの)
+    # 6. New edges (wire edges etc. not covered by any face)
     for a, b in data.get("new_edges", []):
         va, vb = vmap.get(a), vmap.get(b)
         if not (va and vb and va.is_valid and vb.is_valid):
@@ -363,7 +363,7 @@ def _apply_layer(bm, idl, data, warnings, layer_name):
         if bm.edges.get((va, vb)) is None:
             bm.edges.new((va, vb))
 
-    # 7. 新規面
+    # 7. New faces
     for ids in data.get("new_faces", []):
         vs = [vmap.get(i) for i in ids]
         if any(v is None or not v.is_valid for v in vs):
@@ -376,8 +376,8 @@ def _apply_layer(bm, idl, data, warnings, layer_name):
         except ValueError:
             warnings.append(_T("{layer}: cannot create face {ids}").format(layer=layer_name, ids=ids))
 
-    # 8. 属性 (マテリアル / スムーズ / シーム / シャープ / クリース / ベベルウェイト)
-    # 対象が見つからない場合は上流の変更で消えているだけなので黙ってスキップする
+    # 8. Attributes (material / smooth / seam / sharp / crease / bevel weight)
+    # Missing targets just mean an upstream change removed them, so skip silently
     for ids, mat, smooth in data.get("face_attrs", []):
         f = _find_face(vmap, idl, ids)
         if f:

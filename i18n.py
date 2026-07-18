@@ -1,14 +1,14 @@
-"""UI 翻訳 (英語ソース + 日本語辞書)"""
+"""UI translations (English source strings + Japanese dictionary)"""
 
 import bpy
 
 
-# UI 翻訳 (レポートや動的文字列は自動翻訳されないため、このヘルパーを通す)
+# Reports and runtime-formatted strings are not translated automatically; route them through this helper
 _T = bpy.app.translations.pgettext_iface
 
-# 日本語訳 (ソースは英語。Blender の言語設定が日本語なら自動で切り替わる)
+# Japanese translations (source strings are English; Blender switches automatically when the UI language is Japanese)
 _JA = {
-    # オペレータ名
+    # Operator labels
     "Initialize Stack": "スタックを初期化",
     "Record New Layer": "新規レイヤーを記録",
     "Re-edit Selected Layer": "選択レイヤーを再編集",
@@ -24,7 +24,7 @@ _JA = {
     "Rebuild": "再構築",
     "Discard Stack (Keep Current Mesh)": "スタックを破棄 (現状を確定)",
     "Bake and Remove Stack": "ベイクしてスタックを削除",
-    # 説明 (ツールチップ)
+    # Descriptions (tooltips)
     "Create a layer stack on this object": "このオブジェクトにレイヤースタックを作成する",
     "Start recording a new layer at the tip of the active branch": "新規レイヤーの記録を開始する (アクティブブランチの先端に追加)",
     "Re-edit the selected layer (edits to a shared layer affect all branches)": "選択中のレイヤーを再編集する (共有レイヤーの変更は全ブランチに波及する)",
@@ -41,7 +41,7 @@ _JA = {
     "Rebuild the stack": "スタックを再構築する",
     "Discard the stack without rebuilding, keeping the current mesh (preserves shape keys)": "再構築せずに現在のメッシュのままスタックを破棄する (シェイプキー等を保持)",
     "Apply the active branch result and remove the stack": "アクティブブランチの結果を確定してスタックを破棄する",
-    # プロパティ
+    # Properties
     "Name": "名前",
     "Enabled": "有効",
     "Color": "色",
@@ -52,7 +52,7 @@ _JA = {
     "Start recording in Sculpt Mode": "スカルプトモードで記録を開始する",
     "Up": "上へ",
     "Down": "下へ",
-    # レポート
+    # Reports
     "Stack initialized ({count} vertices)": "スタックを初期化しました (頂点 {count})",
     "Meshes with shape keys are not supported. Apply/remove the keys first (create shape keys after modeling and baking)": "シェイプキーのあるメッシュは非対応です。先にキーを適用/削除してください (シェイプキーはモデリング完了後・ベイク後の作成を推奨)",
     'Recording started: press "Commit" when done': "記録開始: 編集後に「コミット」してください",
@@ -87,12 +87,12 @@ _JA = {
     "Rebuilt": "再構築しました",
     "Stack discarded; current mesh kept": "現在のメッシュを保持したままスタックを破棄しました",
     "Baked and removed the stack": "ベイクしてスタックを削除しました",
-    # 再構築の警告
+    # Rebuild warnings
     "{layer}: missing vertices for edge ({a}, {b})": "{layer}: エッジの参照頂点が欠落 ({a}, {b})",
     "{layer}: missing vertices for face {ids}": "{layer}: 面の参照頂点が欠落 {ids}",
     "{layer}: cannot create face {ids}": "{layer}: 面を作成できません {ids}",
     "{layer}: missing vertex {i} to move": "{layer}: 移動対象の頂点 {i} が欠落",
-    # パネル / リスト
+    # Panel / lists
     "← {count} branches": "← {count} 分岐",
     "shared {shared} + own {own}": "共有{shared} + 専用{own}",
     "{count} layers": "{count} 層",
@@ -120,7 +120,7 @@ _JA = {
     "Bake": "ベイク",
     "Unrecorded edits are detected and can be adopted": "記録外の編集は検出され「取り込み」で救済できます",
     "{count} warnings:": "警告 {count} 件:",
-    # v0.8: マージ / 部分ベイク / 影響ハイライト
+    # v0.8: merge / partial bake / influence highlight
     "Merge Into Previous": "直前のレイヤーと統合",
     "Merge the selected layer into the previous (upper) layer": "選択中のレイヤーを直前 (1 つ上) のレイヤーに統合する",
     "Bake Up To Here": "ここまでをベースに確定",
