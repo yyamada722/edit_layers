@@ -4,7 +4,7 @@
 
 A Blender add-on that adds a **non-destructive mesh editing stack**: your manual modeling work is recorded as stackable layers. Edits that change topology (extrude, bevel, subdivide, delete, ...) are captured too, and every layer can be toggled, reordered and re-edited afterwards. You can also **branch** the stack at any layer to explore and compare variations.
 
-![Comparing branches side by side](docs/images/viewport_compare.png)
+![Comparing branches side by side](docs/images/en/viewport_compare.png)
 
 - **Location**: 3D Viewport > Sidebar (N key) > Edit Layers tab
 - **Requirements**: Blender 5.0+ / the UI follows Blender's language preference (English and Japanese included)
@@ -23,7 +23,7 @@ Preferences > Get Extensions > dropdown menu > **Install from Disk** (Blender 5.
 4. Press **Commit** to save the session as a single layer
 5. When you are done, press **Bake** to apply the result and remove the stack
 
-<img src="docs/images/panel_layers.png" alt="Edit Layers panel" width="380">
+<img src="docs/images/en/panel_layers.png" alt="Edit Layers panel" width="380">
 
 ### Reading the layer list
 
@@ -43,7 +43,7 @@ The list is ordered top to bottom: first layer at the top, newest at the bottom 
 
 ## Influence overlay
 
-![Influence overlay](docs/images/viewport_influence.png)
+![Influence overlay](docs/images/en/viewport_influence.png)
 
 Enable the **overlay icon** on the right of the layer list header to highlight the vertices affected by the selected layer in the viewport: **orange = moved vertices / green = created vertices**. Handy when you forget what a layer did, or before merging/deleting one.
 
@@ -72,7 +72,7 @@ Both come with safety guards: merging shared layers, partial bakes that would or
 
 ## Rescue for unrecorded edits
 
-<img src="docs/images/panel_rescue.png" alt="Unrecorded edits warning" width="380">
+<img src="docs/images/en/panel_rescue.png" alt="Unrecorded edits warning" width="380">
 
 If you edit without starting a recording, the unrecorded changes are detected automatically. Press **Adopt as a Layer** to save them retroactively with the same quality as a normal commit. While unrecorded edits exist, operations that would wipe them (recording, reordering, baking, ...) are blocked; they are only discarded when you explicitly press **Discard and Rebuild**.
 

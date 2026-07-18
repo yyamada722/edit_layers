@@ -12,7 +12,12 @@ import bmesh
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 assert os.path.basename(ROOT) == "edit_layers", ROOT
+
+# EL_CAPTURE_LANG=ja (既定) で日本語 UI -> docs/images、en で英語 UI -> docs/images/en
+LANG = os.environ.get("EL_CAPTURE_LANG", "ja")
 OUT_DIR = os.path.join(ROOT, "docs", "images")
+if LANG != "ja":
+    OUT_DIR = os.path.join(OUT_DIR, "en")
 os.makedirs(OUT_DIR, exist_ok=True)
 
 sys.path.insert(0, os.path.dirname(ROOT))
@@ -20,12 +25,12 @@ import edit_layers
 
 edit_layers.register()
 
-# 日本語 UI で撮影する
-try:
-    bpy.context.preferences.view.language = "ja_JP"
-    bpy.context.preferences.view.use_translate_interface = True
-except Exception:
-    traceback.print_exc()
+if LANG == "ja":
+    try:
+        bpy.context.preferences.view.language = "ja_JP"
+        bpy.context.preferences.view.use_translate_interface = True
+    except Exception:
+        traceback.print_exc()
 
 # パネルショットはサイドバー部分だけに切り出す
 CROP = {"panel_layers.png", "panel_recording.png", "panel_rescue.png"}
