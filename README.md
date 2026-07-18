@@ -12,8 +12,14 @@ A Blender add-on that adds a **non-destructive mesh editing stack**: your manual
 
 ## Installation
 
-Download `edit_layers-<version>.zip` from [Releases](../../releases) and install it via
-Preferences > Get Extensions > dropdown menu > **Install from Disk** (Blender 5.0+).
+> **Blender Extensions**: the add-on has been submitted to
+> [extensions.blender.org](https://extensions.blender.org/approval-queue/edit-layers/)
+> and is currently under review. Once approved, you will be able to install it
+> directly from Preferences > Get Extensions.
+
+Until then, download `edit_layers-<version>.zip` from [Releases](../../releases)
+and install it via Preferences > Get Extensions > dropdown menu >
+**Install from Disk** (Blender 5.0+).
 
 ## Basic workflow
 

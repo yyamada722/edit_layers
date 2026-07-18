@@ -12,8 +12,13 @@
 
 ## インストール
 
-[Releases](../../releases) から `edit_layers-<version>.zip` をダウンロードし、
-プリファレンス > 拡張機能 > 右上メニュー > **Install from Disk** でインストール (Blender 5.0+)。
+> **Blender Extensions**: 公式プラットフォーム
+> ([extensions.blender.org](https://extensions.blender.org/approval-queue/edit-layers/))
+> に申請済みで、現在審査中です。承認され次第、プリファレンス > 拡張機能から
+> 直接インストールできるようになります。
+
+それまでは [Releases](../../releases) から `edit_layers-<version>.zip` をダウンロードし、
+プリファレンス > 拡張機能 > 右上メニュー > **Install from Disk** でインストールしてください (Blender 5.0+)。
 
 ## 基本ワークフロー
 
