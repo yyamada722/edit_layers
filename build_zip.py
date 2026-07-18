@@ -3,14 +3,10 @@
 使い方:
     python build_zip.py
 
-blender_manifest.toml のバージョンを読み取り、アドオンファイルのみを含む
-2 種類の zip を dist/ に生成する:
-
-- edit_layers-<version>-extension.zip
-    blender_manifest.toml をアーカイブ直下に置く正規の拡張機能形式。
-    extensions.blender.org への申請にはこちらを使う。
-- edit_layers-<version>.zip
-    トップレベルに edit_layers/ フォルダを持つ形式 (Install from Disk 用)。
+blender_manifest.toml のバージョンを読み取り、正規の拡張機能形式
+(マニフェストがアーカイブ直下) の zip を dist/edit_layers-<version>.zip に生成する。
+命名・内容とも公式の `blender --command extension build` の既定出力と同一で、
+extensions.blender.org への申請にも Install from Disk にもこれを使う。
 
 パッケージに含めるのは *.py と blender_manifest.toml と LICENSE のみ
 (ドキュメント・テスト・ツール類は含めない)。
@@ -51,17 +47,11 @@ def main():
     dist = HERE / "dist"
     dist.mkdir(exist_ok=True)
 
-    ext = dist / f"{PACKAGE}-{version}-extension.zip"
-    with zipfile.ZipFile(ext, "w", zipfile.ZIP_DEFLATED) as zf:
+    out = dist / f"{PACKAGE}-{version}.zip"
+    with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as zf:
         for name in files:
             zf.write(HERE / name, name)
-    print(f"built: {ext} ({ext.stat().st_size} bytes)")
-
-    nested = dist / f"{PACKAGE}-{version}.zip"
-    with zipfile.ZipFile(nested, "w", zipfile.ZIP_DEFLATED) as zf:
-        for name in files:
-            zf.write(HERE / name, f"{PACKAGE}/{name}")
-    print(f"built: {nested} ({nested.stat().st_size} bytes)")
+    print(f"built: {out} ({out.stat().st_size} bytes)")
 
 
 if __name__ == "__main__":

@@ -24,16 +24,17 @@
 python build_zip.py
 ```
 
-bl_info と blender_manifest.toml のバージョン一致を確認してから、2 種類の zip が
-`dist/` に生成される:
+`dist/edit_layers-<version>.zip` (正規の拡張機能形式) が生成される。
+命名・内容とも公式ビルダー `blender --command extension build` の既定出力
+(`{id}-{version}.zip`) と同一で、**申請にも Install from Disk にもこれを使う**。
+バージョンは `blender_manifest.toml` の `version` だけを更新すればよい
+(bl_info は Extensions 化にともない削除済み)。
 
-- `edit_layers-<version>.zip` — トップレベルフォルダあり (従来形式)。
-  プリファレンス > アドオン > インストール / 拡張機能 > Install from Disk のどちらでも使える
-- `edit_layers-<version>-extension.zip` — マニフェストがアーカイブ直下の正規形式。
-  **extensions.blender.org への申請にはこちらを使う**
+補足 (公式 CLI との対応):
 
-バージョンを上げるときは `__init__.py` の `bl_info["version"]` と
-`blender_manifest.toml` の `version` の両方を更新する (不一致だとビルドが止まる)。
+- 検証: `blender --command extension validate <zip またはソースディレクトリ>`
+- `--split-platforms` は wheel を同梱しない本アドオンでは不要
+- 自前の配布リポジトリを立てる場合は `server-generate` でリスティングを生成できる
 
 ## Blender Extensions 申請メモ
 

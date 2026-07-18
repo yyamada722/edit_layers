@@ -12,10 +12,8 @@
 
 ## インストール
 
-[Releases](../../releases) から zip をダウンロードして、どちらかの方法でインストール:
-
-- **拡張機能として**: プリファレンス > 拡張機能 > 右上メニュー > Install from Disk → `edit_layers-<version>-extension.zip`
-- **アドオンとして**: プリファレンス > アドオン > インストール → `edit_layers-<version>.zip`
+[Releases](../../releases) から `edit_layers-<version>.zip` をダウンロードし、
+プリファレンス > 拡張機能 > 右上メニュー > **Install from Disk** でインストール (Blender 5.0+)。
 
 ## 基本ワークフロー
 
