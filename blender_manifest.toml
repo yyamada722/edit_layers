@@ -25,6 +25,7 @@ paths_exclude_pattern = [
   "/tests/",
   "/tools/",
   "/build_zip.py",
+  "/LICENSE",
   "/DEVELOPMENT.md",
   "/RELEASE_NOTES*",
   "/README.md",
