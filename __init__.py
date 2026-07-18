@@ -1,4 +1,4 @@
-"""Edit Layers — layer-based non-destructive mesh editing stack (Edit Poly style)
+"""Edit Layers — layer-based non-destructive mesh editing stack
 
 Entry point: this module only handles class registration and application
 handler management. The implementation lives in the following modules:

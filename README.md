@@ -1,8 +1,8 @@
 # Edit Layers
 
-**Layer-based non-destructive mesh editing stack for Blender** — record any Edit/Sculpt Mode session as a layer, then toggle, reorder, re-edit, merge and branch your modeling steps, 3ds Max "Edit Poly" style. (English/Japanese UI included — this README is in Japanese; see the in-addon help for details.)
+**Layer-based non-destructive mesh editing stack for Blender** — record any Edit/Sculpt Mode session as a layer, then toggle, reorder, re-edit, merge and branch your modeling steps. (English/Japanese UI included — this README is in Japanese; see the in-addon help for details.)
 
-3ds Max の Edit Poly のような、**レイヤーベースの非破壊メッシュ編集スタック**を Blender に追加するアドオンです。押し出し・ベベル・サブディバイド・削除などのトポロジ変更を含む編集をレイヤーとして記録し、後から個別に無効化・並べ替え・再編集できます。さらに任意のレイヤーから**ブランチ**を分岐させ、編集パターンの切り替え・比較ができます。
+モデリングの手作業を「レイヤー」として積み上げられる、**非破壊メッシュ編集スタック**を Blender に追加するアドオンです。押し出し・ベベル・サブディバイド・削除などのトポロジ変更を含む編集をレイヤーとして記録し、後から個別に無効化・並べ替え・再編集できます。さらに任意のレイヤーから**ブランチ**を分岐させ、編集パターンの切り替え・比較ができます。
 
 ![ブランチの並べて比較](docs/images/viewport_compare.png)
 
