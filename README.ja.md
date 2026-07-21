@@ -12,13 +12,13 @@
 
 ## インストール
 
-> **Blender Extensions**: 公式プラットフォーム
-> ([extensions.blender.org](https://extensions.blender.org/approval-queue/edit-layers/))
-> に申請済みで、現在審査中です。承認され次第、プリファレンス > 拡張機能から
-> 直接インストールできるようになります。
+**Blender Extensions** で公開中です:
+[extensions.blender.org/add-ons/edit-layers](https://extensions.blender.org/add-ons/edit-layers/)
+— プリファレンス > 拡張機能 で「Edit Layers」を検索してそのままインストールできます
+(アップデートも自動配信されます)。
 
-それまでは [Releases](../../releases) から `edit_layers-<version>.zip` をダウンロードし、
-プリファレンス > 拡張機能 > 右上メニュー > **Install from Disk** でインストールしてください (Blender 5.0+)。
+または [Releases](../../releases) から `edit_layers-<version>.zip` をダウンロードし、
+プリファレンス > 拡張機能 > 右上メニュー > **Install from Disk** でもインストールできます (Blender 5.0+)。
 
 ## 基本ワークフロー
 
